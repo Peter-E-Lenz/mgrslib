@@ -50,7 +50,7 @@ compass = [
         'order':1
     },
     {
-        'name':'North-North East',
+        'name':'North by North East',
         'shortname':'NNE',
         'azimuth':22.5,
         'order':3
@@ -62,7 +62,7 @@ compass = [
         'order':2
     },
     {
-        'name':'East-North East',
+        'name':'East by North East',
         'shortname':'ENE',
         'azimuth':67.5,
         'order':3
@@ -74,7 +74,7 @@ compass = [
         'order':1
     },
     {
-        'name':'East-South East',
+        'name':'East by South East',
         'shortname':'ESE',
         'azimuth':112.5,
         'order':3
@@ -86,7 +86,7 @@ compass = [
         'order':2
     },
     {
-        'name':'South-South East',
+        'name':'South by South East',
         'shortname':'SSE',
         'azimuth':157.5,
         'order':3
@@ -98,7 +98,7 @@ compass = [
         'order':1
     },
     {
-        'name':'South-South West',
+        'name':'South by South West',
         'shortname':'SSW',
         'azimuth':202.5,
         'order':3
@@ -110,7 +110,7 @@ compass = [
         'order':2
     },
     {
-        'name':'West-South West',
+        'name':'West by South West',
         'shortname':'WSW',
         'azimuth':247.5,
         'order':3
