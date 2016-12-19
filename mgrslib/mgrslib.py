@@ -29,6 +29,7 @@ import numbers
 
 mgrs = MGRS.MGRS()
 
+#mgrslib assumes ALL geodata is WGS84
 wgs84 = nv.FrameE(name='WGS84')
 
 class Lazy(object):
@@ -42,6 +43,7 @@ class Lazy(object):
         setattr(obj, self._calculate.func_name, value)
         return value 
 
+#TBD: Add 4th Order compass points (i.e. North by East at azimuth 11.25)
 compass = [
     {
         'name':'North',
@@ -50,19 +52,19 @@ compass = [
         'order':1
     },
     {
-        'name':'North by North East',
+        'name':'North-Northeast',
         'shortname':'NNE',
         'azimuth':22.5,
         'order':3
     },
     {
-        'name':'North East',
+        'name':'Northeast',
         'shortname':'NE',
         'azimuth':45,
         'order':2
     },
     {
-        'name':'East by North East',
+        'name':'East-Northeast',
         'shortname':'ENE',
         'azimuth':67.5,
         'order':3
@@ -74,19 +76,19 @@ compass = [
         'order':1
     },
     {
-        'name':'East by South East',
+        'name':'East-Southeast',
         'shortname':'ESE',
         'azimuth':112.5,
         'order':3
     },
     {
-        'name':'South East',
+        'name':'Southeast',
         'shortname':'SE',
         'azimuth':135,
         'order':2
     },
     {
-        'name':'South by South East',
+        'name':'South-Southeast',
         'shortname':'SSE',
         'azimuth':157.5,
         'order':3
@@ -98,19 +100,19 @@ compass = [
         'order':1
     },
     {
-        'name':'South by South West',
+        'name':'South-Southwest',
         'shortname':'SSW',
         'azimuth':202.5,
         'order':3
     },
     {
-        'name':'South West',
+        'name':'Southwest',
         'shortname':'SW',
         'azimuth':225,
         'order':2
     },
     {
-        'name':'West by South West',
+        'name':'West-Southwest',
         'shortname':'WSW',
         'azimuth':247.5,
         'order':3
@@ -122,19 +124,19 @@ compass = [
         'order':1
     },
     {
-        'name':'West by North West',
+        'name':'West-Northwest',
         'shortname':'WNW',
         'azimuth':292.5,
         'order':3
     },
     {
-        'name':'North West',
+        'name':'Northwest',
         'shortname':'NW',
         'azimuth':315,
         'order':2
     },
     {
-        'name':'North by North West',
+        'name':'North-Northwest',
         'shortname':'NNW',
         'azimuth':337.5,
         'order':3
@@ -151,6 +153,31 @@ compass = [
 #def average(grids):
 #    #averages the locations of a list of grids
 #    pass
+
+#TBD: a function for determining if all members of a list are contiguous
+#def isContiguous(grids):
+
+#tbd: a function for determining if any member of a list of grids are non-contiguous
+#def isNonContiguous(grids)
+
+#TBD: a function for determining if all members of a list are non-contiguous
+#def isIsolate(grids):
+
+#TBD: a function for sorting grids North-South
+#def ns_sort(grids):
+
+#TBD: a function for sorting grids East-West
+#def es_sort(grids):
+
+#TBD: a function for sorting grids East-West than North-South
+#def sort(grids):
+
+#TBD: a function for returning the Northern-most member of a list
+#TBD: a function for returning the Southern-most member of a list
+#TBD: a function for returning the Eastern-most member of a list
+#TBD: a function for returning the Western-most member of a list
+
+
 
 class Grid(object):
 
@@ -282,9 +309,6 @@ class Grid(object):
         dest, azimuth_dest = self._point.geo_point(distance=dist, azimuth=azimuth, degrees=True)
         return Grid(dest.latitude_deg,dest.longitude_deg,precision=self.precision,source='translation')
 
-    #def azimuth(self,gridB):
-    #    dest, azimuth_dest = self.__point.geo_point(distance=dist, azimuth=azimuth, degrees=True)
-
     @Lazy
     def north(self):
         return self.translate(self.size,0)
@@ -364,29 +388,53 @@ class Grid(object):
 
         return out
 
-    def isNorthOf(self,gridB):
-        if 'N' in self.heading(gridB,order=3,shortNames=True):
-            return True
+    def isNorthOf(self,gridB,azimuthal=False):
+        if azimuthal:
+            if 'N' in self.heading(gridB,order=4,shortNames=True):
+                return True
+            else:
+                return False
         else:
-            return False
+            if self.latitude>=gribB.latitude:
+                return True
+            else:
+                return False
 
-    def isSouthOf(self,gridB):
-        if 'S' in self.heading(gridB,order=3,shortNames=True):
-            return True
+    def isSouthOf(self,gridB,azimuthal=True):
+        if azimuthal:
+            if 'S' in self.heading(gridB,order=3,shortNames=True):
+                return True
+            else:
+                return False
         else:
-            return False
+            if self.latitude<=gribB.latitude:
+                return True
+            else:
+                return False
 
-    def isEastOf(self,gridB):
-        if 'E' in self.heading(gridB,order=3,shortNames=True):
-            return True
+    def isEastOf(self,gridB,azimuthal=True):
+        if azimuthal:
+            if 'E' in self.heading(gridB,order=3,shortNames=True):
+                return True
+            else:
+                return False
         else:
-            return False
+            if self.longitude>=gribB.longitude:
+                return True
+            else:
+                return False
 
-    def isWestOf(self,gridB):
-        if 'W' in self.heading(gridB,order=3,shortNames=True):
-            return True
+    def isWestOf(self,gridB,azimuthal=True):
+        if azimuthal:
+            if 'W' in self.heading(gridB,order=3,shortNames=True):
+                return True
+            else:
+                return False
         else:
-            return False
+            if self.longitude<=gribB.longitude:
+                return True
+            else:
+                return False
 
     #############################
     #                           #
@@ -396,6 +444,9 @@ class Grid(object):
 
     #FUTURE ENHANCEMENT
 
+    #def ajoins(self,gribB):
+    #    pass
+
     #################################
     #                               #
     #   PARENT/CHILD RELATIONSHIPS  #
@@ -403,6 +454,10 @@ class Grid(object):
     #################################
 
     #FUTURE ENHANCEMENT
+
+    #def contains(self,gribB,bilateral=False):
+    #   pass
+
 
     #########################
     #                       #
@@ -449,3 +504,5 @@ class Grid(object):
             self.latitude = self.lat
             self.lon=ll[1]
             self.longitude = self.lon
+
+        #TBD - add UTM as input
