@@ -1,7 +1,13 @@
 #
-#  mgrslib - Geodetic opertions in MGRS space for Python
+#  mgrslib
+#  Geodetic operations in MGRS space for Data Scientists
+#  version 0.0.1 
+#  alpha status
 #
-#  Copyright (c) Peter E Lenz [pelenz@pelenz.com]
+#  http://www.pelenz.com/mgrslib
+#  http://www.github.com/peter-e-lenz/mgrslib
+#
+#  Copyright 2017 (c) Peter E Lenz [pelenz@pelenz.com]
 #  All rights reserved. 
 #
 #  MIT License
@@ -23,131 +29,342 @@
 #  DEALINGS IN THE SOFTWARE.
 #
 
-import mgrs as MGRS 
-import nvector as nv
-import numbers
+from mgrs import MGRS 
+from nvector import FrameE, deg
+from collections import namedtuple
+from math import fabs
+from numbers import Number as number
 
-mgrs = MGRS.MGRS()
+mgrs = MGRS()
 
-#mgrslib assumes ALL geodata is WGS84
-wgs84 = nv.FrameE(name='WGS84')
+#mgrslib assumes all geodata is WGS84
+wgs84 = FrameE(name='WGS84')
 
-class Lazy(object):
-    def __init__(self, calculate_function):
-        self._calculate = calculate_function
+def _instanceTypeCheck(inst,typeof):
+    if not isinstance(typeof,list):
+        typeof=[typeof]
 
-    def __get__(self, obj, _=None):
-        if obj is None:
-            return self
-        value = self._calculate(obj)
-        setattr(obj, self._calculate.func_name, value)
-        return value 
+    matchesAny = False
 
-#TBD: Add 4th Order compass points (i.e. North by East at azimuth 11.25)
-compass = [
+    for i in typeof:
+        if isinstance(inst,i):
+            matchesAny = True
+            break
+
+    if not matchesAny:
+        acceptable = ', '.join([str(i) for i in typeof])
+        
+        isMultMsg=''
+        if len(typeof)>1:
+            isMultMsg='one of '
+        
+        raise TypeError('Variable type must be '+isMultMsg+acceptable+'. Input was type '+str(type(inst)))
+
+class Heading(object):
+    def __init__(self, name, abbr, azimuth, order):
+        self.name=name
+        self.abbr=abbr
+        self.azimuth=float(azimuth)
+        self.order=order
+
+    def __repr__(self):
+        return self.name
+    
+    def __float__(self):
+        return self.azimuth
+
+    def __str__(self):
+        return self.name
+
+    def __abs__(self):
+        return abs(self.azimuth)
+
+    def __eq__(self,azimuthB):
+        if isinstance(azimuthB,Heading):
+            return self.__dict__ == azimuthB.__dict__
+        else:
+            return self.azimuth == azimuthB
+
+    def __ne__(self,azimuthB):
+        if isinstance(azimuthB,Heading):
+            return self.__dict__ != azimuthB.__dict__
+        else:
+            return self.azimuth != azimuthB
+
+    def __gt__(self,azimuthB):
+        return float(azimuthB)>self.azimuth
+    
+    def __lt__(self,azimuthB):
+        return float(azimuthB)<self.azimuth
+
+    def __ge__(self,azimuthB):
+        return float(azimuthB)>=self.azimuth
+
+    def __le__(self,azimuthB):
+        return float(azimuthB)<=self.azimuth
+
+    #def next(self) 
+
+class _Headings(dict):
+    def __init__(self,c):
+        self.iterlist__=[]
+        for i in c:
+            h=Heading(i['name'],i['abbr'],i['azimuth'],i['order'])
+            if i['name'] not in c:
+                self[i['name'].lower().replace(' ','-')]=h
+            self.iterlist__.append(h)
+
+    def __getattr__(self, name):
+        return self[name.lower()]
+
+    def __setattr__(self, name, value):
+        if '__' not in name:
+            _instanceTypeCheck(value,Heading)
+            self[name.lower()]=value
+        else:
+            self[name]=value
+
+    def __delattr__(self, name):
+        del self[name]
+
+    def __iter__(self):
+        return iter(self.iterlist__)
+
+    def __repr__(self):
+        return '< Headings '+repr(self.keys())+' >'
+
+    def findHeading(self,bearing,order=3):
+        s=361
+        out=None
+
+        for i in self.iterlist__:
+            if i.order<=order:
+                d=max(bearing,i.azimuth)-min(bearing,i.azimuth)
+                if d < s:
+                    s = d
+                    out = i
+                else:
+                    return out
+        return out
+
+_compass = [
     {
         'name':'North',
-        'shortname':'N',
+        'abbr':'N',
         'azimuth':0,
         'order':1
     },
     {
+        'name':'North by East',
+        'abbr':'NbE',
+        'azimuth':11.25,
+        'order':4
+    },
+    {
         'name':'North-Northeast',
-        'shortname':'NNE',
+        'abbr':'NNE',
         'azimuth':22.5,
         'order':3
     },
     {
+        'name':'Northeast by North',
+        'abbr':'NEbN',
+        'azimuth':33.75,
+        'order':4
+    },
+    {
         'name':'Northeast',
-        'shortname':'NE',
+        'abbr':'NE',
         'azimuth':45,
         'order':2
     },
     {
+        'name':'Northeast by East',
+        'abbr':'NEbE',
+        'azimuth':56.25,
+        'order':4
+    },
+    {
         'name':'East-Northeast',
-        'shortname':'ENE',
+        'abbr':'ENE',
         'azimuth':67.5,
         'order':3
     },
     {
+        'name':'East by North',
+        'abbr':'EbN',
+        'azimuth':78.75,
+        'order':4
+    },
+    {
         'name':'East',
-        'shortname':'E',
+        'abbr':'E',
         'azimuth':90,
         'order':1
     },
     {
+        'name':'East by South',
+        'abbr':'EbS',
+        'azimuth':101.25,
+        'order':4
+    },
+    {
         'name':'East-Southeast',
-        'shortname':'ESE',
+        'abbr':'ESE',
         'azimuth':112.5,
         'order':3
     },
     {
+        'name':'Southeast by East',
+        'abbr':'SEbE',
+        'azimuth':123.75,
+        'order':4
+    },
+    {
         'name':'Southeast',
-        'shortname':'SE',
+        'abbr':'SE',
         'azimuth':135,
         'order':2
     },
     {
+        'name':'Southeast by South',
+        'abbr':'SEbS',
+        'azimuth':146.25,
+        'order':4
+    },
+    {
         'name':'South-Southeast',
-        'shortname':'SSE',
+        'abbr':'SSE',
         'azimuth':157.5,
         'order':3
     },
     {
+        'name':'South by East',
+        'abbr':'SbE',
+        'azimuth':168.75,
+        'order':4
+    },
+    {
         'name':'South',
-        'shortname':'S',
+        'abbr':'S',
         'azimuth':180,
         'order':1
     },
     {
+        'name':'South by West',
+        'abbr':'SbW',
+        'azimuth':191.25,
+        'order':4
+    },
+    {
         'name':'South-Southwest',
-        'shortname':'SSW',
+        'abbr':'SSW',
         'azimuth':202.5,
         'order':3
     },
     {
+        'name':'Southwest by South',
+        'abbr':'SWbS',
+        'azimuth':213.75,
+        'order':4
+    },
+    {
         'name':'Southwest',
-        'shortname':'SW',
+        'abbr':'SW',
         'azimuth':225,
         'order':2
     },
     {
+        'name':'Southwest by West',
+        'abbr':'SWbW',
+        'azimuth':236.25,
+        'order':4
+    },
+    {
         'name':'West-Southwest',
-        'shortname':'WSW',
+        'abbr':'WSW',
         'azimuth':247.5,
         'order':3
     },
     {
+        'name':'West by South',
+        'abbr':'WbS',
+        'azimuth':258.75,
+        'order':4
+    },
+    {
         'name':'West',
-        'shortname':'W',
+        'abbr':'W',
         'azimuth':270,
         'order':1
     },
     {
+        'name':'West by North',
+        'abbr':'WbN',
+        'azimuth':281.25,
+        'order':4
+    },
+    {
         'name':'West-Northwest',
-        'shortname':'WNW',
+        'abbr':'WNW',
         'azimuth':292.5,
         'order':3
     },
     {
+        'name':'Northwest by West',
+        'abbr':'NWbW',
+        'azimuth':303.75,
+        'order':4
+    },
+    {
         'name':'Northwest',
-        'shortname':'NW',
+        'abbr':'NW',
         'azimuth':315,
         'order':2
     },
     {
+        'name':'Northwest by North',
+        'abbr':'NWbN',
+        'azimuth':326.25,
+        'order':4
+    },
+    {
         'name':'North-Northwest',
-        'shortname':'NNW',
+        'abbr':'NNW',
         'azimuth':337.5,
         'order':3
     },
     {
+        'name':'North by West',
+        'abbr':'NbW',
+        'azimuth':348.75,
+        'order':4
+    },
+    {
         'name':'North',
-        'shortname':'N',
+        'abbr':'N',
         'azimuth':360,
         'order':1
     }
 ]
+
+Compass = _Headings(_compass)
+
+class _GeometryStore(object):
+    def __init__(self):
+        self.Point = namedtuple('Point','latitude longitude')
+        self.Segment = namedtuple('Segment','origin destination')
+        self.Line = namedtuple('Line','origin destination')
+        self.Rect = namedtuple('Rectangle','southeast southwest northeast northwest')
+        self.Polygon = namedtuple('Polygon', 'segments')
+        self.MultiPolygon = namedtuple('Multipolygon', 'polygons')
+
+    #def quadToPolygon(self,quad):
+    #    pass
+
+
+
+_Geometry = _GeometryStore()
 
 #TBD: a function for returning the grid that is the average of a list of grids 
 #def average(grids):
@@ -163,19 +380,12 @@ compass = [
 #TBD: a function for determining if all members of a list are non-contiguous
 #def isIsolate(grids):
 
-#TBD: a function for sorting grids North-South
-#def ns_sort(grids):
-
-#TBD: a function for sorting grids East-West
-#def es_sort(grids):
-
-#TBD: a function for sorting grids East-West than North-South
-#def sort(grids):
-
-#TBD: a function for returning the Northern-most member of a list
-#TBD: a function for returning the Southern-most member of a list
-#TBD: a function for returning the Eastern-most member of a list
-#TBD: a function for returning the Western-most member of a list
+#TBD: a function for returning the Northern-most member of a list/set
+#TBD: a function for returning the Southern-most member of a list/set
+#TBD: a function for returning the Eastern-most member of a list/set
+#TBD: a function for returning the Western-most member of a list/set
+#TBD: a function for returning the Center-most member of a list/set
+#TBD: a function for returning the Boundary-members of a list/set (i.e. any grid with less then 4 neighbors also in the set)
 
 
 
@@ -186,32 +396,36 @@ class Grid(object):
     #   PARSING GRID ID  #
     #                    #
     ######################
-    @Lazy
+    @property
     def __lastAlphaCharacter(self):
         c=-1
         for i in reversed(self.grid_id):
             c+=1
             if i.isalpha():
                 return len(self.grid_id)-c
-    @Lazy
+    @property
     def gzd(self):
         return self.grid_id[0:self.__lastAlphaCharacter-2]
 
-    @Lazy
-    def grid_square(self):
+    @property
+    def gridSquare(self):
         return self.grid_id[self.__lastAlphaCharacter-2:self.__lastAlphaCharacter]
 
-    @Lazy
-    def numerical_location(self):
-        return self.grid_id[self.__lastAlphaCharacter:]
-
-    @Lazy
+    @property
+    def __numerical_location(self):
+            try:
+                return int(self.grid_id[self.__lastAlphaCharacter:])
+            except:
+                return 0
+    @property
     def easting(self):
-        return self.grid_id[self.__lastAlphaCharacter:self.__lastAlphaCharacter+self.precision]
+        return int(self.grid_id[self.__lastAlphaCharacter:self.__lastAlphaCharacter+self.precision])
 
-    @Lazy
+    @property
     def northing(self):
-        return self.grid_id[self.__lastAlphaCharacter+self.precision:]
+        return int(self.grid_id[self.__lastAlphaCharacter+self.precision:])
+
+
 
     ############################
     #                          #
@@ -219,13 +433,13 @@ class Grid(object):
     #                          #
     ############################
 
-    @Lazy
+    @property
     def size(self):
         return int('1'+('0'*(abs(5-self.precision))))
 
-    @Lazy
+    @property
     def precision(self):
-        return len(self.numerical_location)/2
+        return len(str(self.__numerical_location))/2
 
     #####################
     #                   #
@@ -241,58 +455,67 @@ class Grid(object):
         elif self.precision>newPrecsision:
             #larger size, truncate mgrs easting and northing
             source = 'upsize'
-            grid_id=self.gzd+self.grid_square+self.easting[:newPrecsision]+self.northing[:newPrecsision]
+            grid_id=self.gzd+self.gridSquare+str(self.easting)[:newPrecsision]+str(self.northing)[:newPrecsision]
             return Grid(grid_id,precision=newPrecsision,source=source)
         else:
             source = 'downsize'
             #smaller size - return new Grid object based on currect Grid object's lat/lon value at the newPrecsision size
             return Grid(self.lat,self.lon,precision=newPrecsision,source=source)
 
-    @Lazy
+    @property
     def mgrs1(self):
         #5
         return self.resize(5)
 
-    @Lazy
+    @property
     def mgrs10(self):
         #4
         return self.resize(4)
 
-    @Lazy
+    @property
     def mgrs100(self):
         #3
         return self.resize(3)
 
-    @Lazy
+    @property
     def mgrs1000(self):
         #2
         return self.resize(2)
 
-    @Lazy
+    @property
     def mgrs1k(self):
         #2
         return self.mgrs1000
 
-    @Lazy
+    @property
     def mgrs10000(self):
         #1
         return self.resize(1)
 
-    @Lazy
+    @property
     def mgrs10k(self):
         #1
         return self.mgrs10000
 
-    @Lazy
+    @property
     def mgrs100000(self):
         #0
-        return Grid(self.gzd+self.grid_square)
+        return Grid(self.gzd+self.gridSquare)
 
-    @Lazy
+    @property
     def mgrs100k(self):
         #0
         return self.mgrs100000
 
+    def increase(self,increase_by=1):
+        for i in range(decrease_by):
+            r = self.resize(self.grid_id,precision=min([self.precision-1,1]),source='upsize')
+        return r
+
+    def decrease(self,increase_by=1):
+        for i in range(decrease_by):
+            r=self.resize(self.grid_id,precision=max([self.precision+1,5]),source='downsize')
+        return r
 
     ######################
     #                    #
@@ -301,46 +524,73 @@ class Grid(object):
     ######################
 
 
-    @Lazy
-    def _point(self):
+    @property
+    def __point(self):
         return wgs84.GeoPoint(latitude=self.lat, longitude=self.lon, z=0, degrees=True)
 
     def translate(self,dist,azimuth):
-        dest, azimuth_dest = self._point.geo_point(distance=dist, azimuth=azimuth, degrees=True)
+        dest, azimuth_dest = self.__point.geo_point(distance=dist, azimuth=azimuth, degrees=True)
         return Grid(dest.latitude_deg,dest.longitude_deg,precision=self.precision,source='translation')
 
-    @Lazy
+    @property
     def north(self):
-        return self.translate(self.size,0)
+        return self.translate(self.size,Compass.north)
 
-    @Lazy
-    def south(self):
-        return self.translate(self.size,180)
-
-    @Lazy
+    @property
     def east(self):
-        return self.translate(self.size,90)
+        return self.translate(self.size,Compass.east)
 
-    @Lazy
+    @property
+    def south(self):
+        return self.translate(self.size,Compass.south)
+
+    @property
     def west(self):
-        return self.translate(self.size,270)
+        return self.translate(self.size,Compass.west)
 
-    def _distToGridCount(self,dist):
+    ################
+    #              #
+    #   DISTANCE   #
+    #              #
+    ################
+
+    def __distToGridCount(self,dist):
         return max(int(dist/self.size),1)
 
-    def distance(self,gridB,heading=False):
-        dist, _azia, _azib = self._point.distance_and_azimuth(gridB._point)
-        return dist
+    def distance(self,gridB,km=False):
+        _instanceTypeCheck(gridB,Grid)
 
-    def square_buffer(self,dist,distY=None):
+        dist, _azia, _azib = self.__point.distance_and_azimuth(gridB.__point)
+
+        if km:
+            return dist/1000.0
+        else:
+            return dist
+
+    #def manhattan_distance(self,GridB):
+    #    pass
+
+
+    ###############
+    #             #
+    #   BUFFERS   #
+    #             #
+    ###############
+
+    def rectBuffer(self,dist,distY=None):
+        #TBD: return values in a GridList
+        dist=int(dist)
+
         if not distY:
             distY=dist
-        
-        row=self.translate(dist/2,270).translate(distY/2,180)
+        else:
+            distY=int(distY)        
+
+        row=self.translate(int(dist/2),Compass.west).translate(int(distY/2),Compass.south)
         cell=row
-        out=[]
-        for i in range(self._distToGridCount(distY)):
-            for j in range(self._distToGridCount(dist)):
+        out=mgrsList()
+        for i in range(self.__distToGridCount(distY)):
+            for j in range(self.__distToGridCount(dist)):
                 out.append(cell)
                 cell=cell.east
             row=row.north
@@ -352,100 +602,96 @@ class Grid(object):
             return out
 
     def buffer(self,dist):
-        sq=self.square_buffer(dist)
-        out=[]
+        #TBD: return values in a GridList
+        sq=self.rectBuffer(dist*2)
+        out=mgrsList()
         for i in sq:
-            if self.distance(i)<=dist/2:
+            if self.distance(i)<=dist:
                 out.append(i)
         if len(out)==0:
             return [self]
         else:
             return out
 
-    ###############################
-    #                             #
-    #   AZIMUTHAL RELATIONSHIPS   #
-    #                             #
-    ###############################
+    ################################
+    #                              #
+    #   DIRECTIONAL RELATIONSHIPS  #
+    #                              #
+    ################################
 
 
-    def azimuth(self,gridB):
-        _dist, azia, _azib = self._point.distance_and_azimuth(gridB._point)
-        return azia
+    def bearing(self,gridB):
+            _instanceTypeCheck(gridB,Grid)
 
-    def heading(self,gridB,order=3,shortNames=False):
-        a=self.azimuth(gridB)
-        s=0
-        out=None
-        for i in compass:
-            if i['order']<=order:
-                d=max(a,i['azimuth'])-min(a,i['azimuth'])
-                if d>s:
-                    if shortNames:
-                        out=i['shortname']
-                    else:
-                        out=i['name']
+            _dist, azia, _azib = self.__point.distance_and_azimuth(gridB.__point)
+            return deg(azia)
 
-        return out
+    def heading(self,gridB,order=4):
+        _instanceTypeCheck(gridB,Grid)
 
-    def isNorthOf(self,gridB,azimuthal=False):
-        if azimuthal:
-            if 'N' in self.heading(gridB,order=4,shortNames=True):
+        a=self.bearing(gridB)
+
+        if a < 0:
+            a = 360-fabs(a)
+
+        return Compass.findHeading(a,order=order)
+
+    def isNorthOf(self,gridB,cartesian=False,order=4):
+        _instanceTypeCheck(gridB,Grid)
+
+        if not cartesian:
+            if 'N' in self.heading(gridB,order=order).abbr:
                 return True
             else:
                 return False
         else:
-            if self.latitude>=gribB.latitude:
+            if self.latitude<gridB.latitude:
                 return True
             else:
                 return False
 
-    def isSouthOf(self,gridB,azimuthal=True):
-        if azimuthal:
-            if 'S' in self.heading(gridB,order=3,shortNames=True):
+    def isSouthOf(self,gridB,cartesian=False,order=4):
+        _instanceTypeCheck(gridB,Grid)
+
+        if not cartesian:
+            if 'S' in self.heading(gridB,order=order).abbr:
                 return True
             else:
                 return False
         else:
-            if self.latitude<=gribB.latitude:
+            if self.latitude>gridB.latitude:
                 return True
             else:
                 return False
 
-    def isEastOf(self,gridB,azimuthal=True):
-        if azimuthal:
-            if 'E' in self.heading(gridB,order=3,shortNames=True):
-                return True
-            else:
-                return False
-        else:
-            if self.longitude>=gribB.longitude:
-                return True
-            else:
-                return False
+    def isEastOf(self,gridB,cartesian=False,order=4):
+        _instanceTypeCheck(gridB,Grid)
 
-    def isWestOf(self,gridB,azimuthal=True):
-        if azimuthal:
-            if 'W' in self.heading(gridB,order=3,shortNames=True):
+        if not cartesian:
+            if 'E' in self.heading(gridB,order=order).abbr:
                 return True
             else:
                 return False
         else:
-            if self.longitude<=gribB.longitude:
+            if self.longitude<gridB.longitude:
                 return True
             else:
                 return False
 
-    #############################
-    #                           #
-    #   ADJOINAL RELATIONSHIPS  #
-    #                           #
-    #############################
+    def isWestOf(self,gridB,cartesian=False,order=4):
+        _instanceTypeCheck(gridB,Grid)
 
-    #FUTURE ENHANCEMENT
+        if not cartesian:
+            if 'W' in self.heading(gridB,order=order).abbr:
+                return True
+            else:
+                return False
+        else:
+            if self.longitude>gridB.longitude:
+                return True
+            else:
+                return False
 
-    #def ajoins(self,gribB):
-    #    pass
 
     #################################
     #                               #
@@ -453,19 +699,105 @@ class Grid(object):
     #                               #
     #################################
 
-    #FUTURE ENHANCEMENT
+    def contains(self,gridB):
+        _instanceTypeCheck(gridB,Grid)
 
-    #def contains(self,gribB,bilateral=False):
-    #   pass
+        if self.precision<gridB.precision:
+                if gridB.resize(self.precision)==self:
+                    return True
+                else:
+                    return False
+        else:
+            return False
+
+    def isContainedBy(self,gridB):
+        _instanceTypeCheck(gridB,Grid)
+
+        if self.precision>gridB.precision:
+            if self.resize(gridB.precision)==gridB:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    #############################
+    #                           #
+    #   ADJOINAL RELATIONSHIPS  #
+    #                           #
+    #############################
+
+    @property
+    def neighbors(self):
+        #TBD: make output into a GridList
+        out = mgrsList()
+        out.append(self.north)
+        out.append(self.east)
+        out.append(self.south)
+        out.append(self.west)
+        return out
+
+    def adjoins(self,gridB):
+        _instanceTypeCheck(gridB,Grid)
+
+        if self.size==gridB.size:
+            #compare this grid to a same sized grid
+            neighbors=self.neighbors
+            if gridB in neighbors:
+                return True
+            else:
+                return False
+        else:
+            #disimalar sized grids
+            if self.precision>gridB.precision:
+                smaller=gridB
+                larger=self
+            else:
+                larger=gridB
+                smaller=self
+
+            neighbors=[i.resize(larger.precision) for i in smaller.neighbors]
+            #    smaller.north.resize(larger.precision), 
+            #    smaller.east.resize(larger.precision), 
+            #    smaller.south.resize(larger.precision), 
+            #    smaller.west.resize(larger.precision)
+            #]
+
+            if larger in neighbors:
+                return True
+            else:
+                return False
 
 
-    #########################
-    #                       #
-    #   POLYGON BOUNDARIES  #
-    #                       #
-    #########################
 
-    #FUTURE ENHANCEMENT
+    ################
+    #              #
+    #   GEOMETRY   #
+    #              #
+    ################
+
+    @property
+    def point(self):
+        return _Geometry.Point(self.latitude,self.longitude)
+
+    @property
+    def boundingBox(self):
+        out ={}
+        
+        sw = self
+        se = self.translate(self.size,90)
+        ne = se.translate(self.size,0)
+        nw = se.translate(self.size,270)
+
+        se_p=_Geometry.Point(se.latitude,se.longitude)
+        sw_p=_Geometry.Point(sw.latitude,sw.longitude)
+        ne_p=_Geometry.Point(ne.latitude,ne.longitude)
+        nw_p=_Geometry.Point(nw.latitude,nw.longitude)
+
+        #bb=_Geometry.Polygon([_Geometry.Segment(se_p,_Geometry.Segment(sw_p,_Geometry.Segment(ne_p,_Geometry.Segment(nw_p, None))))])
+        bb=_Geometry.Rect(se_p,sw_p,ne_p,nw_p)
+
+        return bb
 
 
     def __str__(self):
@@ -474,9 +806,50 @@ class Grid(object):
     def __repr__(self):
         return self.grid_id
 
+    def __eq__(self, gridB):
+        if self.grid_id.lstrip('0') == gridB.grid_id.lstrip('0'):
+            return True
+        else:
+            return False
+
+    def __ne__(self, gridB):
+        return not self.__eq__(gridB)
+
+    def __gt__(self, gridB):
+        if self.isNorthOf(gridB,cartesian=True)
+            return True
+        else self.heading(gridB,order = 4)==Compass.east:
+            return True
+        else: 
+            return False
+
+    def __lt__(self, gridB):
+        if self.isSouthOf(gridB,cartesian=True)
+            return True
+        else self.heading(gridB,order = 4)==Compass.west:
+            return True
+        else: 
+            return False
+
+    def __ge__(self, gridB):
+        if self==gribB:
+            return True
+        elif self.isNorthOf(gridB,cartesian=True) and self.isEastOf(gridB,cartesian=True):
+            return True
+        else: 
+            return False
+
+    def __le__(self, gridB):
+        if self==gribB:
+            return True
+        elif self.isSouthOf(gridB,cartesian=True) and self.isWestOf(gridB,cartesian=True):
+            return True
+        else: 
+            return False
+    
     def __init__(self,lat,lon=None,precision=5,source=None):
 
-        if isinstance(lat,numbers.Number) and isinstance(lon,numbers.Number):
+        if isinstance(lat,number) and isinstance(lon,number):
             # passed in lat/lon pair
             if source == None:
                 self.source='lat/lon'
@@ -490,6 +863,7 @@ class Grid(object):
             self.lon=lon
             self.longitude = self.lon
 
+
         elif isinstance(lat,str) and lon == None:
             # passed in mgrs grid id
             if source == None:
@@ -497,7 +871,7 @@ class Grid(object):
             else:
                 self.source=source
 
-            self.grid_id = lat
+            self.grid_id = lat.upper().replace(' ','')
 
             ll=mgrs.toLatLon(self.grid_id)
             self.lat=ll[0]
@@ -505,4 +879,125 @@ class Grid(object):
             self.lon=ll[1]
             self.longitude = self.lon
 
-        #TBD - add UTM as input
+        else:
+            if lon==None:
+                #throw error, can not make a grid from lat
+            else:
+                #throw error, can not make a valid grid from (lat,lon)
+
+class _gridStruct(object):
+    def areAllGrids(self):
+        test = [True if isinstance(i,Grid) else False for i in self]
+        if False in test:
+            return False
+        else:
+            return True
+
+    def removeNonGrids(self):
+        for i in self:
+            if not isinstance(i,Grid):
+                del self[i]
+ 
+    def isContiguous(self):
+        all_neighbors=[]
+        for g in self:
+            all_neighbors = all_neighbors + g.neighbors
+        for i in self:
+            if n not in self:
+                return False
+        return True
+
+    def isIsloated(self):
+        for g in self:
+            for i in g.neighbors():
+                if i in self:
+                    return False
+        return True
+
+    def nearestTo(self,grid):
+        #returns the Grid in self closest to gridB
+        pass
+
+    def centerEasting(self,nearest=False):
+         #returns Grid containing the avg(latitude),max(longitude) or else the nearest member of self to said point
+        lats,lons = [i.latitude,i.longitude for i in self]
+        c = Grid(avg(lats),max(lons))
+
+        if nearest:
+            return self.nearestTo(c)
+        else:
+            return c
+
+    def centerX(self,nearest=False):
+        return centerEasting(nearest=nearest)
+
+    def centerNorthing(self,nearest=False):
+         #returns Grid containing the avg(longitude),max(latitude) or else the nearest member of self to said point
+        lats,lons = [i.latitude,i.longitude for i in self]
+        c = Grid(max(lats),avg(lons))
+
+        if nearest:
+            return self.nearestTo(c)
+        else:
+            return c
+
+    def centerY(self,nearest=False):
+        return centerNorthing(nearest=nearest)
+
+    def centeroid(self):
+        return Grid(centerNorthing().latitude,centerEasting().longitude)
+
+    def northernmost(self):
+        #returns the northernmost Grids in self. If multiple grids qualify it returns the one with max(easting)          
+        max_lat = max(sorted(self, key=lambda x: x.latitude))
+        return self.__offspring([i for i in self if i.latitude=max_lat])
+
+    def westernmost(self):
+        #returns the westernmost Grids in self.           
+        min_lon = min(sorted(self, key=lambda x: x.longitude))
+        return self.__offspring([i for i in self if i.longitude=min_lon])
+
+    def easternmost(self):
+         #returns the easternmost Grids in self.      
+        max_lon = max(sorted(self, key=lambda x: x.longitude))
+        return self.__offspring([i for i in self if i.longitude=max_lon])
+
+    def southernmost(self):
+        #returns the southernmost Grids in self.
+        min_lat = min(sorted(self, key=lambda x: x.latitude))
+        return self.__offspring([i for i in self if i.latitude=min_lat])
+
+    def exterior(self):
+        out=[]
+        for g in self:
+            for n in g.neighbors:
+                if n not in self:
+                    out.add(g)
+                    break
+        return self.__offspring(out)
+
+    def interior(self):
+        return self.__offspring([i for i in self if not in self.exterior()])
+
+    def boundingBox(self):
+        #returns grids at the corners of a bounding box encomposing all members of self
+        nw = _Geometry.Point(self.northernmost().longitude,westernmost().latitude)
+        ne = _Geometry.Point(self.northernmost().longitude,easternmost().latitude)
+        sw = _Geometry.Point(self.southernmost().longitude,westernmost().latitude)
+        se = _Geometry.Point(self.southernmost().longitude,easternmost().latitude)
+
+        return _Geometry.Rect(se,sw,ne,nw)
+
+    def __offspring(self,struct):
+        if self.isinstance(mgrsSet):
+            return gridSet(struct)
+        elif self.isinstance(mgrsList):
+            return gridList(struct)
+
+
+
+class mgrsList(list, _gridStruct):
+    pass
+
+class mgrsSet(set, _gridStruct):
+    pass
