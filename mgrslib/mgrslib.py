@@ -351,6 +351,7 @@ _compass = [
 Compass = _Headings(_compass)
 
 class _GeometryStore(object):
+    #This is dumb, we don't need this level of complexity here
     def __init__(self):
         self.Point = namedtuple('Point','latitude longitude')
         self.Segment = namedtuple('Segment','origin destination')
@@ -387,7 +388,11 @@ _Geometry = _GeometryStore()
 #TBD: a function for returning the Center-most member of a list/set
 #TBD: a function for returning the Boundary-members of a list/set (i.e. any grid with less then 4 neighbors also in the set)
 
-
+    ######################
+    #                    #
+    #   THE GRID OBJECT  #
+    #                    #
+    ######################
 
 class Grid(object):
 
@@ -512,7 +517,7 @@ class Grid(object):
             r = self.resize(self.grid_id,precision=min([self.precision-1,1]),source='upsize')
         return r
 
-    def decrease(self,increase_by=1):
+    def decrease(self,decrease_by=1):
         for i in range(decrease_by):
             r=self.resize(self.grid_id,precision=max([self.precision+1,5]),source='downsize')
         return r
@@ -721,6 +726,10 @@ class Grid(object):
         else:
             return False
 
+    def __contains__(x):
+        _instanceTypeCheck(gridB,Grid)
+        return self.contains(x)
+
     #############################
     #                           #
     #   ADJOINAL RELATIONSHIPS  #
@@ -815,37 +824,26 @@ class Grid(object):
     def __ne__(self, gridB):
         return not self.__eq__(gridB)
 
+    #This is not the right way to do this - rewrite these!
     def __gt__(self, gridB):
-        if self.isNorthOf(gridB,cartesian=True)
-            return True
-        else self.heading(gridB,order = 4)==Compass.east:
-            return True
-        else: 
-            return False
+        return (self.isNorthOf(gridB) and self.isEastOf(gridB))
 
     def __lt__(self, gridB):
-        if self.isSouthOf(gridB,cartesian=True)
-            return True
-        else self.heading(gridB,order = 4)==Compass.west:
-            return True
-        else: 
-            return False
+        return (self.isSouthOf(gridB) and self.isWestOf(gridB))
+
 
     def __ge__(self, gridB):
         if self==gribB:
             return True
-        elif self.isNorthOf(gridB,cartesian=True) and self.isEastOf(gridB,cartesian=True):
-            return True
-        else: 
-            return False
+        return self.__gt__(gribB)
 
     def __le__(self, gridB):
         if self==gribB:
             return True
-        elif self.isSouthOf(gridB,cartesian=True) and self.isWestOf(gridB,cartesian=True):
-            return True
-        else: 
-            return False
+        return self.__le__(gribB)
+
+    def __contains__(self,gribB):
+        return self.contains(gribB)
     
     def __init__(self,lat,lon=None,precision=5,source=None):
 
@@ -881,12 +879,21 @@ class Grid(object):
 
         else:
             if lon==None:
+                pass
                 #throw error, can not make a grid from lat
             else:
-                #throw error, can not make a valid grid from (lat,lon)
+                pass
+                #throw error, can not make a valid grid from these inputs
+
+
+    ####################################
+    #                                  #
+    #   MGRSSET/MGRSLIST PARENT CLASS  #
+    #                                  #
+    ####################################
 
 class _gridStruct(object):
-    def areAllGrids(self):
+    def containsOnlyGrids(self):
         test = [True if isinstance(i,Grid) else False for i in self]
         if False in test:
             return False
@@ -898,29 +905,43 @@ class _gridStruct(object):
             if not isinstance(i,Grid):
                 del self[i]
  
-    def isContiguous(self):
-        all_neighbors=[]
-        for g in self:
-            all_neighbors = all_neighbors + g.neighbors
+    def isContiguous(self,grid,diagonal=False):
+        #return true if all neighbors of g have the same membership type as grid
+        membershipType = grid in self
+        tests = [(i in self) == membershipType for i in grid.neighbors]
+        return not (False in tests) 
+
+    def isIsoated(self,grid,diagonal=False):
+        #return true if all neighbors of g have the opposite membership type as grid
+        membershipType = grid in self
+        tests = [(i in self) == membershipType for i in grid.neighbors]
+        return False in tests
+
+    def __distanceMap(self,to):
+        out={}
         for i in self:
-            if n not in self:
-                return False
-        return True
+            d=i.distance(to)
+            if d not in out:
+                out[d]=[i]
+            else
+                out[d].append(i)
+        return out
 
-    def isIsloated(self):
-        for g in self:
-            for i in g.neighbors():
-                if i in self:
-                    return False
-        return True
-
-    def nearestTo(self,grid):
+    def nearestTo(self,gridB):
         #returns the Grid in self closest to gridB
-        pass
+        d=self.__distanceMap(gribB)
+        r=d[min(d.keys)].centerEasting()
+        if len(r)==1:
+            return r[0]
+        elif len(r)==0:
+            return None
+        else:
+            return r.centerEasting()
 
     def centerEasting(self,nearest=False):
          #returns Grid containing the avg(latitude),max(longitude) or else the nearest member of self to said point
-        lats,lons = [i.latitude,i.longitude for i in self]
+        lats = [i.latitude for i in self]
+        lons = [i.longitude for i in self]
         c = Grid(avg(lats),max(lons))
 
         if nearest:
@@ -933,7 +954,8 @@ class _gridStruct(object):
 
     def centerNorthing(self,nearest=False):
          #returns Grid containing the avg(longitude),max(latitude) or else the nearest member of self to said point
-        lats,lons = [i.latitude,i.longitude for i in self]
+        lats = [i.latitude for i in self]
+        lons = [i.longitude for i in self]
         c = Grid(max(lats),avg(lons))
 
         if nearest:
@@ -950,22 +972,22 @@ class _gridStruct(object):
     def northernmost(self):
         #returns the northernmost Grids in self. If multiple grids qualify it returns the one with max(easting)          
         max_lat = max(sorted(self, key=lambda x: x.latitude))
-        return self.__offspring([i for i in self if i.latitude=max_lat])
+        return self.__offspring([i for i in self if i.latitude==max_lat])
 
     def westernmost(self):
         #returns the westernmost Grids in self.           
         min_lon = min(sorted(self, key=lambda x: x.longitude))
-        return self.__offspring([i for i in self if i.longitude=min_lon])
+        return self.__offspring([i for i in self if i.longitude==min_lon])
 
     def easternmost(self):
          #returns the easternmost Grids in self.      
         max_lon = max(sorted(self, key=lambda x: x.longitude))
-        return self.__offspring([i for i in self if i.longitude=max_lon])
+        return self.__offspring([i for i in self if i.longitude==max_lon])
 
     def southernmost(self):
         #returns the southernmost Grids in self.
         min_lat = min(sorted(self, key=lambda x: x.latitude))
-        return self.__offspring([i for i in self if i.latitude=min_lat])
+        return self.__offspring([i for i in self if i.latitude==min_lat])
 
     def exterior(self):
         out=[]
@@ -977,7 +999,7 @@ class _gridStruct(object):
         return self.__offspring(out)
 
     def interior(self):
-        return self.__offspring([i for i in self if not in self.exterior()])
+        return self.__offspring([i for i in self if i not in self.exterior()])
 
     def boundingBox(self):
         #returns grids at the corners of a bounding box encomposing all members of self
@@ -994,6 +1016,12 @@ class _gridStruct(object):
         elif self.isinstance(mgrsList):
             return gridList(struct)
 
+
+    ###############################################################
+    #                                                             #
+    #   CREATE MGRSSET/MGRSLIST CLASSES VIA MULTIPLE INHERITANCE  #
+    #                                                             #
+    ###############################################################
 
 
 class mgrsList(list, _gridStruct):
