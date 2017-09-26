@@ -2,7 +2,7 @@
 
 ## Introduction
 
-[MGRS (Military Grid Reference System)](https://en.wikipedia.org/wiki/MGRS) is a system originally created by [NATO](https://en.wikipedia.org/wiki/NATO)  for [ gridifying ](http://earth-info.nga.mil/GandG/coordsys/grids/universal_grid_system.html) location data anywhere on earth by assigning every location to a tesselating set of grids, with each grid having a unqiue semantic string identifier.  Beyond its military applications MGRS is also very useful for data scientsists working with spatial data for a number of jobs:
+[MGRS (Military Grid Reference System)](https://en.wikipedia.org/wiki/MGRS) is a system originally created by [NATO](https://en.wikipedia.org/wiki/NATO)  for [ gridifying ](http://earth-info.nga.mil/GandG/coordsys/grids/universal_grid_system.html) location data anywhere on earth by assigning every location to a tessellating set of grids, with each grid having a unique semantic string identifier.  Beyond its military applications MGRS is also very useful for data scientists working with spatial data for a number of jobs:
 * dimensionality reduction
 * featurization
 * key-value stores
@@ -10,9 +10,11 @@
 
 The downside of working in MGRS is that there are few good tools for doing geodetic operations directly in MGRS space. I wrote <span style="font-variant: small-caps">mgrslib</span> to rectify this and - quite frankly - make my life as a geographer easier.
 
+<span style="font-variant: small-caps">mgrslib</span> follows the [worse is better](https://en.wikipedia.org/wiki/Worse_is_better) design philosophy; it's better to have a slower less featureful implementation then no implementation at all. Optimizations will be executed when we have to.
+
 ## License
 
-<span style="font-variant: small-caps">mgrslib</span> is liscenced under the MIT License and offered as is without warranty of any kind, express or implied. 
+<span style="font-variant: small-caps">mgrslib</span> is licensed under the MIT License and offered as is without warranty of any kind, express or implied. 
 
 ## Installation
 
@@ -22,7 +24,7 @@ The downside of working in MGRS is that there are few good tools for doing geode
 
 ### Dependencies
 <span style="font-variant: small-caps">mgrslib</span> uses the python [MGRS package](https://github.com/hobu/mgrs) for transforming between lat/lon and mgrs space which is in turn a thin wrapper around the [geotrans](http://earth-info.nga.mil/GandG/geotrans/) library from the [U.S. National Geo-Spatial Intelligence Agency](https://nga.mil ).
-<span style="font-variant: small-caps">mgrslib</span> uses the [python port](https://pypi.python.org/pypi/nvector) of the [N-Vector package](http://www.navlab.net/nvector/) from the [Norwegian Defence Research Establishment](http://www.ffi.no/en/Sider/default.aspx) for spatial calculations.
+<span style="font-variant: small-caps">mgrslib</span> uses the [python port](https://pypi.python.org/pypi/nvector) of the [N-Vector package](http://www.navlab.net/nvector/) from the [Norwegian Defense Research Establishment](http://www.ffi.no/en/Sider/default.aspx) for spatial calculations.
 
 When installing from PyPi these dependencies are handled automatically.
 
@@ -43,7 +45,7 @@ When installing from PyPi these dependencies are handled automatically.
 | ---- | ------- |
 | Class | Grid Object |
 
-Initalizes a Grid object from a lattiude and longitude, a string MGRS grid id, or another Grid object. If a *precision* is not set the Grid object will default to a *precision* of 5, the most precise value possible. Please refer to Grid.**precision**, later in this document, for more information about *precision* values.
+Initializes a Grid object from a latitude and longitude, a string MGRS grid id, or another Grid object. If a *precision* is not set the Grid object will default to a *precision* of 5, the most precise value possible. Please refer to Grid.**precision**, later in this document, for more information about *precision* values.
 TBD: allow initializing a Grid object from a [UTM](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)
 
 ### Grid object Equality
@@ -62,7 +64,7 @@ sorted([Grid(20,20),Grid('4QGH94933312')])
 ```
 
 When compared to another Grid object Grids sort spatially, Southwest to Northeast i.e. -180 W, -90 S is considered larger than 180 E, 90 N. 
-Grids will thow an error when compared to another type.
+Grids will throw an error when compared to another type.
 
 ## Parsing
 
@@ -152,8 +154,9 @@ Size is a measure of the length of a side of a grid in meters
 | ---- | ------- |
 | Property | Int |
 
-Precision is a measure of the maximum level of accuracy of a grid, larger values have higher accuracy
-| Precsion | Size of grid side |
+Precision is a measure of the maximum level of accuracy of a grid, larger values have higher accuracy:
+
+| Precision | Size of grid side |
 |---|---|
 | 5   |   1m |
 | 4   |   10m |
@@ -171,10 +174,10 @@ Precision is a measure of the maximum level of accuracy of a grid, larger values
 | Function | Grid object |
 
 When resizing to a larger grid size (i.e from precision 4 to precision 3) is done by truncating the MGRS grid id in accordance with best practices.
-When resizing to a smaller grid size (i.e from precision 3 to precision 4) is done by specifing a new Grid object of the lat/lon of the current Grid at the specified smaller precision
+When resizing to a smaller grid size (i.e from precision 3 to precision 4) is done by specifying a new Grid object of the lat/lon of the current Grid at the specified smaller precision
 
-Convience methods are provided to simplify this process:
-| Convience Method | Equivlent using Grid.resize() |
+Convenience methods are provided to simplify this process:
+| Convenience Method | Equivalent using Grid.resize() |
 |-----------------|----------------| 
 | Grid.mgrs1      | Grid.resize(5) |
 | Grid.mgrs10     | Grid.resize(4) |
@@ -213,11 +216,12 @@ If your current grid is already as large as possible (i.e. precision 0) then an 
 | Type | Returns |
 | ---- | ------- |
 | Function | Grid object |
+
 Returns the Grid at a location offset from the point-of-origin of the current grid by *distance* meters at *azimuth* degrees heading
 
-Convience methods for returning Grid objects of the adjancent grids in each of these directions:
+Convenience methods for returning Grid objects of the adjacent grids in each of these directions:
 
-| Convience Method | Equivlent Grid.translate statement |
+| Convenience Method | Equivalent Grid.translate statement |
 |------------|------------------------------| 
 | Grid.north |Grid.translate(Grid.size,0)   |
 | Grid.east  |Grid.translate(Grid.size,90)  |
@@ -238,6 +242,7 @@ Returns the distance in meters between the lat/lon representation of the current
 | Type | Returns |
 | ---- | ------- |
 | Function | Int |
+
 Returns the [Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry) measured in grids from the current Grid to a second Grid object
 
 ## Buffering
@@ -246,6 +251,7 @@ Returns the [Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)
 | Type | Returns |
 | ---- | ------- |
 | Function | Unsorted list of Grid objects |
+
 Returns a list of Grid objects representing all the Grid objects with their lat/lon representation in a polygon *width* meters wide by *height* meters high centered on the lat/lon representation of the current Grid. If *height* is omitted the value for *width* will also be used for *height*.
 
 ##### Grid.buffer(Float *radius*)
@@ -253,7 +259,8 @@ Returns a list of Grid objects representing all the Grid objects with their lat/
 | Type | Returns |
 | ---- | ------- |
 | Function | Unsorted list of Grid objects |
-Returns a list containing all the Grid objects with thier lat/lon representation in circular area with a radius of *radius* meters centered on the lat/lon representation of the current grid.
+
+Returns a list containing all the Grid objects with their lat/lon representation in circular area with a radius of *radius* meters centered on the lat/lon representation of the current grid.
 
 ## Bearing and Heading
 
@@ -291,9 +298,9 @@ A complete list of supported directions is included at the end of this document 
 These functions are provided as tests to determine the spatial relations of two Grid objects.
 The default behavior (i.e. *cartesian* is set to False) is to check the heading between the two Grids relative to true north.
 
-Because this test is performed is near-spherical space has the advantage of working with any two locations, anywhere on the globe. However becuase it is in spherical space it directions are considered cones that radiate from a point. The angle of the cone is determined by the *order* argument.
+Because this test is performed is near-spherical space has the advantage of working with any two locations, anywhere on the globe. However because it is in spherical space it directions are considered cones that radiate from a point. The angle of the cone is determined by the *order* argument.
 
-If *cartesian* is set to True a different test is performed. Instead of assuming a spherical WGS84 space, points are instead cast into a cartesian plane bounded by 90S to 90N and 180W to 180E. This test has the advatage of assuming directions are defined by perfectly straight lines and can be better when working with Grids seperated over short distances. (TBD: what is a short distance), however this test has issues with working with Grids that pass outside the cartesian plane. I.E. 179E Longitude is considered East of 179W Longitude.
+If *cartesian* is set to True a different test is performed. Instead of assuming a spherical WGS84 space, points are instead cast into a cartesian plane bounded by 90S to 90N and 180W to 180E. This test has the advantage of assuming directions are defined by perfectly straight lines and can be better when working with Grids separated over short distances. (TBD: what is a short distance), however this test has issues with working with Grids that pass outside the cartesian plane. I.E. 179E Longitude is considered East of 179W Longitude.
 
 **TBD**:
 Rewrite this description - it is very confusing.
@@ -350,7 +357,7 @@ These will be extensions of the default **List** and **Set** objects with additi
 * boundary grids
 
 ### Random MGRS grid generator
-This function will generate a random MGRS grid id string at a given precision. In addition to just being a random generator this will be very usefull for testing.
+This function will generate a random MGRS grid id string at a given precision. In addition to just being a random generator this will be very useful for testing.
 
 
 ## Compass Headings
