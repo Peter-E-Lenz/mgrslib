@@ -177,6 +177,7 @@ When resizing to a larger grid size (i.e from precision 4 to precision 3) is don
 When resizing to a smaller grid size (i.e from precision 3 to precision 4) is done by specifying a new Grid object of the lat/lon of the current Grid at the specified smaller precision
 
 Convenience methods are provided to simplify this process:
+
 | Convenience Method | Equivalent using Grid.resize() |
 |-----------------|----------------| 
 | Grid.mgrs1      | Grid.resize(5) |
