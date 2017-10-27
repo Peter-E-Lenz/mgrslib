@@ -40,6 +40,9 @@ mgrs = MGRS()
 #mgrslib assumes all geodata is WGS84
 wgs84 = FrameE(name='WGS84')
 
+def mean(numbers):
+    return float(sum(numbers)) / max(len(numbers), 1)
+
 def _instanceTypeCheck(inst,typeof):
     if not isinstance(typeof,list):
         typeof=[typeof]
@@ -893,6 +896,7 @@ class Grid(object):
     ####################################
 
 class _gridStruct(object):
+
     def containsOnlyGrids(self):
         test = [True if isinstance(i,Grid) else False for i in self]
         if False in test:
@@ -923,83 +927,72 @@ class _gridStruct(object):
             d=i.distance(to)
             if d not in out:
                 out[d]=[i]
-            else
+            else:
                 out[d].append(i)
         return out
 
     def nearestTo(self,gridB):
         #returns the Grid in self closest to gridB
-        d=self.__distanceMap(gribB)
-        r=d[min(d.keys)].centerEasting()
-        if len(r)==1:
-            return r[0]
-        elif len(r)==0:
-            return None
-        else:
-            return r.centerEasting()
+        d=self.__distanceMap(gridB)
+        return mgrsSet(d[min(d.keys())]).centerEasting()
 
-    def centerEasting(self,nearest=False):
-         #returns Grid containing the avg(latitude),max(longitude) or else the nearest member of self to said point
+    def centerEasting(self):
+         #returns Grid containing the avg(latitude),max(longitude)
         lats = [i.latitude for i in self]
         lons = [i.longitude for i in self]
-        c = Grid(avg(lats),max(lons))
+        c = Grid(mean(lats),max(lons))
 
-        if nearest:
-            return self.nearestTo(c)
-        else:
-            return c
+        return c
 
-    def centerX(self,nearest=False):
-        return centerEasting(nearest=nearest)
+    def centerX(self):
+        return self.centerEasting()
 
-    def centerNorthing(self,nearest=False):
+    def centerNorthing(self):
          #returns Grid containing the avg(longitude),max(latitude) or else the nearest member of self to said point
         lats = [i.latitude for i in self]
         lons = [i.longitude for i in self]
-        c = Grid(max(lats),avg(lons))
+        c = Grid(max(lats),mean(lons))
 
-        if nearest:
-            return self.nearestTo(c)
-        else:
-            return c
+        return c
 
-    def centerY(self,nearest=False):
-        return centerNorthing(nearest=nearest)
+    def centerY(self):
+        return self.centerNorthing()
 
     def centeroid(self):
-        return Grid(centerNorthing().latitude,centerEasting().longitude)
+        return Grid(self.centerNorthing().latitude,self.centerEasting().longitude)
 
     def northernmost(self):
         #returns the northernmost Grids in self. If multiple grids qualify it returns the one with max(easting)          
         max_lat = max(sorted(self, key=lambda x: x.latitude))
-        return self.__offspring([i for i in self if i.latitude==max_lat])
+        print max_lat
+        return self.__offspring([i for i in self if i.latitude==max_lat.latitude])
 
     def westernmost(self):
         #returns the westernmost Grids in self.           
         min_lon = min(sorted(self, key=lambda x: x.longitude))
-        return self.__offspring([i for i in self if i.longitude==min_lon])
+        return self.__offspring([i for i in self if i.longitude==min_lon.longitude])
 
     def easternmost(self):
          #returns the easternmost Grids in self.      
         max_lon = max(sorted(self, key=lambda x: x.longitude))
-        return self.__offspring([i for i in self if i.longitude==max_lon])
+        return self.__offspring([i for i in self if i.longitude==max_lon.longitude])
 
     def southernmost(self):
         #returns the southernmost Grids in self.
         min_lat = min(sorted(self, key=lambda x: x.latitude))
-        return self.__offspring([i for i in self if i.latitude==min_lat])
+        return self.__offspring([i for i in self if i.latitude==min_lat.latitude])
 
     def exterior(self):
         out=[]
         for g in self:
             for n in g.neighbors:
                 if n not in self:
-                    out.add(g)
+                    out.append(g)
                     break
         return self.__offspring(out)
 
     def interior(self):
-        return self.__offspring([i for i in self if i not in self.exterior()])
+        return self.__offspring(mgrsSet(self).difference(mgrsSet(self.exterior())))
 
     def boundingBox(self):
         #returns grids at the corners of a bounding box encomposing all members of self
@@ -1011,10 +1004,16 @@ class _gridStruct(object):
         return _Geometry.Rect(se,sw,ne,nw)
 
     def __offspring(self,struct):
-        if self.isinstance(mgrsSet):
-            return gridSet(struct)
-        elif self.isinstance(mgrsList):
-            return gridList(struct)
+        if isinstance(self,mgrsSet):
+            return mgrsSet(struct)
+        elif isinstance(self,mgrsList):
+            return mgrsList(struct)
+
+    def __insert(self,item):
+        if isinstance(self,mgrsSet):
+            self.add(item)
+        elif isinstance(self,mgrsList):
+            self.append(item)
 
 
     ###############################################################

@@ -12,11 +12,11 @@ The downside of working in MGRS is that there are few good tools for doing geode
 
 <span style="font-variant: small-caps">mgrslib</span> follows the [worse is better](https://en.wikipedia.org/wiki/Worse_is_better) design philosophy; it's better to have a slower less featureful implementation then no implementation at all. Optimizations will be executed when we have to.
 
-## License
+### License
 
 <span style="font-variant: small-caps">mgrslib</span> is licensed under the MIT License and offered as is without warranty of any kind, express or implied. 
 
-## Installation
+### Installation
 
 #### From PyPi
 
@@ -33,11 +33,13 @@ When installing from PyPi these dependencies are handled automatically.
 <span style="font-variant: small-caps">mgrslib</span> performs all spatial calculations using the [WGS84 datum](https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84).
 <span style="font-variant: small-caps">mgrslib</span> calculates all [bearings](https://en.wikipedia.org/wiki/Bearing_(navigation)) relative to [true north](https://en.wikipedia.org/wiki/True_north).
 
-## Initializing Grid objects
+##Grid Object
 
-##### Grid(Float/Int *latitude*,Float/Int *longitude*,[Int *precision* = 1...5])
-##### Grid(String *grid_id*,[Int *precision* = 1...5])
-##### Grid(Grid *grid_id*,[Int *precision* = 1...5])
+### Initializing Grid objects
+
+###### Grid(Float/Int *latitude*,Float/Int *longitude*,[Int *precision* = 1...5])
+###### Grid(String *grid_id*,[Int *precision* = 1...5])
+###### Grid(Grid *grid_id*,[Int *precision* = 1...5])
 
 
 
@@ -48,7 +50,7 @@ When installing from PyPi these dependencies are handled automatically.
 Initializes a Grid object from a latitude and longitude, a string MGRS grid id, or another Grid object. If a *precision* is not set the Grid object will default to a *precision* of 5, the most precise value possible. Please refer to Grid.**precision**, later in this document, for more information about *precision* values.
 TBD: allow initializing a Grid object from a [UTM](https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system)
 
-### Grid object Equality
+#### Grid object Equality
 A Grid object is equal to another Grid object if the MGRS representation is exactly equal the MGRS representation of another Grid object. Leading '0' characters are ignored during the equality test.
 
 ``` python
@@ -57,7 +59,7 @@ True
 ```
 
 
-### Sorting Grid objects
+#### Sorting Grid objects
 Grids are sortable using the default Python methods:
 ``` python
 sorted([Grid(20,20),Grid('4QGH94933312')])
@@ -66,9 +68,9 @@ sorted([Grid(20,20),Grid('4QGH94933312')])
 When compared to another Grid object Grids sort spatially, Southwest to Northeast i.e. -180 W, -90 S is considered larger than 180 E, 90 N. 
 Grids will throw an error when compared to another type.
 
-## Parsing
+### Parsing
 
-##### Grid.**gzd**
+###### Grid.**gzd**
 
 | Type | Returns |
 | ---- | ------- |
@@ -76,7 +78,7 @@ Grids will throw an error when compared to another type.
 
 Returns the Grid Zone Designator of this Grid, a 6 degree wide by 8 degree tall region between 90N and 90S, various other shapes above and below those lines of latitude
 
-##### Grid.**grid_square**
+###### Grid.**grid_square**
 
 | Type | Returns |
 | ---- | ------- |
@@ -84,7 +86,7 @@ Returns the Grid Zone Designator of this Grid, a 6 degree wide by 8 degree tall 
 
 Returns the grid square of this Grid
 
-##### Grid.**easting**
+###### Grid.**easting**
 
 | Type | Returns |
 | ---- | ------- |
@@ -92,7 +94,7 @@ Returns the grid square of this Grid
 
 Returns the easting of this Grid
 
-##### Grid.**northing**
+###### Grid.**northing**
 
 | Type | Returns |
 | ---- | ------- |
@@ -100,10 +102,10 @@ Returns the easting of this Grid
 
 Returns the northing of this Grid
 
-## Latitude / Longitude
+### Latitude / Longitude
 
-##### Grid.**latitude**
-##### Grid.**lat**
+###### Grid.**latitude**
+###### Grid.**lat**
 
 | Type | Returns |
 | ---- | ------- |
@@ -111,8 +113,8 @@ Returns the northing of this Grid
 
 Returns the latitude of the southeastern corner of this MGRS grid in [decimal degress](https://en.wikipedia.org/wiki/Decimal_degrees)
 
-##### Grid.**longitude**
-##### Grid.**lon**
+###### Grid.**longitude**
+###### Grid.**lon**
 
 | Type | Returns |
 | ---- | ------- |
@@ -121,9 +123,9 @@ Returns the latitude of the southeastern corner of this MGRS grid in [decimal de
 Returns the longitude of the southeastern corner of this MGRS grid in [decimal degress](https://en.wikipedia.org/wiki/Decimal_degrees)
 
 
-## Grid Characteristics
+### Grid Characteristics
 
-##### Grid.**source**
+###### Grid.**source**
 
 | Type | Returns |
 | ---- | ------- |
@@ -140,7 +142,7 @@ Returns a text description of what kind of data this Grid object was derived fro
 | translation | Traversal from existing Grid object *i.e.* Grid(20,20).east|
 
 
-##### Grid.**size**
+###### Grid.**size**
 
 | Type | Returns |
 | ---- | ------- |
@@ -148,7 +150,7 @@ Returns a text description of what kind of data this Grid object was derived fro
 
 Size is a measure of the length of a side of a grid in meters
 
-##### Grid.**precision**
+###### Grid.**precision**
 
 | Type | Returns |
 | ---- | ------- |
@@ -165,9 +167,9 @@ Precision is a measure of the maximum level of accuracy of a grid, larger values
 | 1   |   10000m (10km) |
 | 0   |   100000m (100km) |
 
-## Resizing
+### Resizing
 
-##### Grid.resize(Int *precision*)
+###### Grid.resize(Int *precision*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -190,9 +192,9 @@ Convenience methods are provided to simplify this process:
 | Grid.mgrs100000 | Grid.resize(0) |
 | Grid.mgrs100k   | Grid.resize(0) |
 
-#### TBD:
+##### TBD:
 
-##### Grid.increase
+###### Grid.increase
 
 | Type | Returns |
 | ---- | ------- |
@@ -201,7 +203,7 @@ Convenience methods are provided to simplify this process:
 Returns a grid one precision level greater - that is one level smaller
 If your current grid is already as precise as possible (i.e. precision 5) then an error is thrown
 
-##### Grid.decrease
+###### Grid.decrease
 
 | Type | Returns |
 | ---- | ------- |
@@ -211,8 +213,8 @@ Returns a grid one precision level lesser - that is one level larger
 If your current grid is already as large as possible (i.e. precision 0) then an error is thrown
 
 
-## Grid Traversal
-##### Grid.translate(Float *distance*, Float *azimuth*)
+### Grid Traversal
+###### Grid.translate(Float *distance*, Float *azimuth*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -229,16 +231,16 @@ Convenience methods for returning Grid objects of the adjacent grids in each of 
 | Grid.south |Grid.translate(Grid.size,180) |
 | Grid.west  |Grid.translate(Grid.size,270) |
 
-## Distance
-##### Grid.distance(grid *grid*)
+### Distance
+###### Grid.distance(grid *grid*)
 
 | Type | Returns |
 | ---- | ------- |
 | Function | Float |
 Returns the distance in meters between the lat/lon representation of the current Grid to a second Grid object
 
-### TBD:
-##### Grid.manhattan_distance(Grid *grid*)
+#### TBD:
+###### Grid.manhattan_distance(Grid *grid*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -246,8 +248,8 @@ Returns the distance in meters between the lat/lon representation of the current
 
 Returns the [Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry) measured in grids from the current Grid to a second Grid object
 
-## Buffering
-##### Grid.rect_buffer(Float *width*,[Float *height*])
+### Buffering
+###### Grid.rect_buffer(Float *width*,[Float *height*])
 
 | Type | Returns |
 | ---- | ------- |
@@ -255,7 +257,7 @@ Returns the [Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)
 
 Returns a list of Grid objects representing all the Grid objects with their lat/lon representation in a polygon *width* meters wide by *height* meters high centered on the lat/lon representation of the current Grid. If *height* is omitted the value for *width* will also be used for *height*.
 
-##### Grid.buffer(Float *radius*)
+###### Grid.buffer(Float *radius*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -263,9 +265,9 @@ Returns a list of Grid objects representing all the Grid objects with their lat/
 
 Returns a list containing all the Grid objects with their lat/lon representation in circular area with a radius of *radius* meters centered on the lat/lon representation of the current grid.
 
-## Bearing and Heading
+### Bearing and Heading
 
-##### Grid.bearing(Grid *grid*)
+###### Grid.bearing(Grid *grid*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -274,7 +276,7 @@ Returns a list containing all the Grid objects with their lat/lon representation
 
 Returns the [bearing](https://en.wikipedia.org/wiki/Bearing_(navigation)) from the current Grid to *grid* relative to [true north](https://en.wikipedia.org/wiki/True_north). 
 
-##### Grid.heading(Grid *grid*,[*order* = 3, *abbr* = False])
+###### Grid.heading(Grid *grid*,[*order* = 3, *abbr* = False])
 
 | Type | Returns |
 | ---- | ------- |
@@ -286,11 +288,11 @@ Returns the name or abbreviation of the nearest named [heading](https://en.wikip
 
 A complete list of supported directions is included at the end of this document and includes compass degress relative to geodetic true north, direction order, heading name, and abbreviations.
 
-## Directional Relationships
-##### Grid.isNorthOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
-##### Grid.isEastOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
-##### Grid.isSouthOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
-##### Grid.isWestOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
+### Directional Relationships
+###### Grid.isNorthOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
+###### Grid.isEastOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
+###### Grid.isSouthOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
+###### Grid.isWestOf(Grid *grid*, Int *order* = 3, Boolean *cartesian* = False)
 
 | Type | Returns |
 | ---- | ------- |
@@ -307,8 +309,8 @@ If *cartesian* is set to True a different test is performed. Instead of assuming
 Rewrite this description - it is very confusing.
 
 
-## Parent/Child Relationships
-##### Grid.contains(Grid *grid*)
+### Parent/Child Relationships
+###### Grid.contains(Grid *grid*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -316,8 +318,8 @@ Rewrite this description - it is very confusing.
 
 Returns True if the current Grid contains *grid*.
 
-#### TBD:
-##### Grid.isContainedBy(Grid *grid*)
+##### TBD:
+###### Grid.isContainedBy(Grid *grid*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -326,8 +328,8 @@ Returns True if the current Grid contains *grid*.
 Returns True if *grid* contains the current Grid.
 
 
-## Adjoinal Relationships
-##### Grid.adjoins(Grid *grid*)
+### Adjoinal Relationships
+###### Grid.adjoins(Grid *grid*)
 
 | Type | Returns |
 | ---- | ------- |
@@ -336,8 +338,8 @@ Returns True if *grid* contains the current Grid.
 Returns True if the current Grid and *grid* share any common border and are not nested.
 
 
-## Polygon Boundaries
-##### Grid.bounds
+### Polygon Boundaries
+###### Grid.bounds
 
 | Type | Returns |
 | ---- | ------- |
@@ -346,20 +348,10 @@ Returns True if the current Grid and *grid* share any common border and are not 
 Returns a dictionary with the keys **southeast**, **southwest**, **northwest**, and **northeast**. Each of these entries in turn is a dictionary with two keys: **latitude** and **longitude**
 It is intended that this property will be useful for generating polygons of MGRS grids.
 
-## Future roadmap:
-In addition to the features above marked **TBD** I plan on adding the following features to <span style="font-variant: small-caps">mgrslib</span> prior to version 1.
+## mgrsList & mgrsSet
+<span style="font-variant: small-caps">mgrslib</span> provides a pair of spatially-aware data structures; mgrsList, which extends python's (!!!LIST URL!!!)[List] and mgrsSet which does the same for (!!!SET URl!!!)[Set]. In both cases all the methods available in the standard library implimentation is also available to the mgrs-aware derivatives as well as the below additional methods.
 
-### mgrsList and mgrsSet
-These will be extensions of the default **List** and **Set** objects with addition methods for performing operations on groups of **Grid** objects. In addition to all the built-ins for these two type I intend to also have functions for:
-* averageing
-* northern/southern/eastern/western - most grids
-* most central grid
-* most isolated grid
-* boundary grids
-
-### Random MGRS grid generator
-This function will generate a random MGRS grid id string at a given precision. In addition to just being a random generator this will be very useful for testing.
-
+## Roadmap to version 1
 
 ## Compass Headings
 | Heading            | Abbreviation | Degrees | Order |
