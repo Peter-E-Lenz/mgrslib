@@ -375,21 +375,6 @@ _Geometry = _GeometryStore()
 #    #averages the locations of a list of grids
 #    pass
 
-#TBD: a function for determining if all members of a list are contiguous
-#def isContiguous(grids):
-
-#tbd: a function for determining if any member of a list of grids are non-contiguous
-#def isNonContiguous(grids)
-
-#TBD: a function for determining if all members of a list are non-contiguous
-#def isIsolate(grids):
-
-#TBD: a function for returning the Northern-most member of a list/set
-#TBD: a function for returning the Southern-most member of a list/set
-#TBD: a function for returning the Eastern-most member of a list/set
-#TBD: a function for returning the Western-most member of a list/set
-#TBD: a function for returning the Center-most member of a list/set
-#TBD: a function for returning the Boundary-members of a list/set (i.e. any grid with less then 4 neighbors also in the set)
 
     ######################
     #                    #
@@ -897,14 +882,14 @@ class Grid(object):
 
 class _gridStruct(object):
 
-    def containsOnlyGrids(self):
+    def __containsOnlyGrids(self):
         test = [True if isinstance(i,Grid) else False for i in self]
         if False in test:
             return False
         else:
             return True
 
-    def removeNonGrids(self):
+    def __removeNonGrids(self):
         for i in self:
             if not isinstance(i,Grid):
                 del self[i]
@@ -1010,10 +995,14 @@ class _gridStruct(object):
             return mgrsList(struct)
 
     def __insert(self,item):
+        _instanceTypeCheck(value,Grid)
         if isinstance(self,mgrsSet):
             self.add(item)
         elif isinstance(self,mgrsList):
             self.append(item)
+
+    #def rTree(self):
+        #Future idea: r tree exporter
 
 
     ###############################################################

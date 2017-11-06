@@ -33,7 +33,7 @@ When installing from PyPi these dependencies are handled automatically.
 <span style="font-variant: small-caps">mgrslib</span> performs all spatial calculations using the [WGS84 datum](https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84).
 <span style="font-variant: small-caps">mgrslib</span> calculates all [bearings](https://en.wikipedia.org/wiki/Bearing_(navigation)) relative to [true north](https://en.wikipedia.org/wiki/True_north).
 
-##Grid Object
+## <i>Grid</i> Object
 
 ### Initializing Grid objects
 
@@ -111,7 +111,7 @@ Returns the northing of this Grid
 | ---- | ------- |
 | Property | Float |
 
-Returns the latitude of the southeastern corner of this MGRS grid in [decimal degress](https://en.wikipedia.org/wiki/Decimal_degrees)
+Returns the latitude of the southeastern corner of this MGRS grid in [decimal degrees](https://en.wikipedia.org/wiki/Decimal_degrees)
 
 ###### Grid.**longitude**
 ###### Grid.**lon**
@@ -180,7 +180,7 @@ When resizing to a smaller grid size (i.e from precision 3 to precision 4) is do
 
 Convenience methods are provided to simplify this process:
 
-| Convenience Method | Equivalent using Grid.resize() |
+| Convenience Property | Equivalent using Grid.resize() |
 |-----------------|----------------| 
 | Grid.mgrs1      | Grid.resize(5) |
 | Grid.mgrs10     | Grid.resize(4) |
@@ -224,7 +224,7 @@ Returns the Grid at a location offset from the point-of-origin of the current gr
 
 Convenience methods for returning Grid objects of the adjacent grids in each of these directions:
 
-| Convenience Method | Equivalent Grid.translate statement |
+| Convenience Property | Equivalent Grid.translate statement |
 |------------|------------------------------| 
 | Grid.north |Grid.translate(Grid.size,0)   |
 | Grid.east  |Grid.translate(Grid.size,90)  |
@@ -301,12 +301,8 @@ A complete list of supported directions is included at the end of this document 
 These functions are provided as tests to determine the spatial relations of two Grid objects.
 The default behavior (i.e. *cartesian* is set to False) is to check the heading between the two Grids relative to true north.
 
-Because this test is performed is near-spherical space has the advantage of working with any two locations, anywhere on the globe. However because it is in spherical space it directions are considered cones that radiate from a point. The angle of the cone is determined by the *order* argument.
-
-If *cartesian* is set to True a different test is performed. Instead of assuming a spherical WGS84 space, points are instead cast into a cartesian plane bounded by 90S to 90N and 180W to 180E. This test has the advantage of assuming directions are defined by perfectly straight lines and can be better when working with Grids separated over short distances. (TBD: what is a short distance), however this test has issues with working with Grids that pass outside the cartesian plane. I.E. 179E Longitude is considered East of 179W Longitude.
-
-**TBD**:
-Rewrite this description - it is very confusing.
+By default this test is performed in WGS84 space cause, causing the results to be relative to each other. In other words 179W is east of 179E.
+If *cartesian* options is set to True the test will instead be performed in a cartesian plane bounded from 90N to 90S and 180W to 180E, causing the results to be relative to each other. In other words 179W is west of 179E. 
 
 
 ### Parent/Child Relationships
@@ -349,9 +345,101 @@ Returns a dictionary with the keys **southeast**, **southwest**, **northwest**, 
 It is intended that this property will be useful for generating polygons of MGRS grids.
 
 ## mgrsList & mgrsSet
-<span style="font-variant: small-caps">mgrslib</span> provides a pair of spatially-aware data structures; mgrsList, which extends python's (!!!LIST URL!!!)[List] and mgrsSet which does the same for (!!!SET URl!!!)[Set]. In both cases all the methods available in the standard library implimentation is also available to the mgrs-aware derivatives as well as the below additional methods.
+<span style="font-variant: small-caps">mgrslib</span> provides a pair of spatially-aware data structures; mgrsList, which extends python's native [List](https://docs.python.org/3.6/tutorial/datastructures.html#more-on-lists) and mgrsSet which does the same for [Set](https://docs.python.org/3.6/tutorial/datastructures.html#sets). In both cases all the methods available in the standard library implementation is also available to the mgrs-aware derivatives as well as the below additional methods.
 
-## Roadmap to version 1
+### Nearest Neighbor
+###### mgrsList/mgrsSet.nearestTo()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Grid |
+
+### Extreme Members
+###### mgrsList/mgrsSet.northernmost()
+###### mgrsList/mgrsSet.easternmost()
+###### mgrsList/mgrsSet.southernmost()
+###### mgrsList/mgrsSet.westernmost()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | mgrsList/mgrsSet |
+
+### Centers
+
+###### mgrsList/mgrsSet.mean()
+###### mgrsList/mgrsSet.average()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Grid |
+
+###### mgrsList/mgrsSet.centeroid()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Grid |
+
+###### mgrsList/mgrsSet.centerEasting()
+###### mgrsList/mgrsSet.centerX()
+
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Grid |
+
+###### mgrsList/mgrsSet.centerNorthing()
+###### mgrsList/mgrsSet.centerY()
+
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Grid |
+
+### Internal Structure
+###### mgrsList/mgrsSet.isContiguous()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Boolean |
+
+Returns True if all members of the aggregation have at least one neighbor grid that is also a member of the aggregation.
+
+###### mgrsList/mgrsSet.isIsolate()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | Boolean |
+
+Returns True if all members of the aggregation have no neighbor grids in the aggregation.
+
+###### mgrsList/mgrsSet.exterior()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | mgrsList/mgrsSet |
+
+Returns an mgrsList/mgrsSet that contains a list of all members of the aggregation where at least one neighbor grid is not a member of the aggregation
+
+
+###### mgrsList/mgrsSet.interior()
+
+| Type | Returns |
+| ---- | ------- |
+| Function | mgrsList/mgrsSet |
+
+Returns an mgrsList/mgrsSet that contains a list of all members of the aggregation where all neighbor grids are also members of the aggregation
+
+### Polygon Boundaries
+###### Grid.bounds()
+
+| Type | Returns |
+| ---- | ------- |
+| Property | Dictionary |
+
+Returns a dictionary with the keys **southeast**, **southwest**, **northwest**, and **northeast**. Each of these entries in turn is a dictionary with two keys: **latitude** and **longitude**
+It is intended that this property will be useful for generating polygons of MGRS grids.
+
+## Compass Object
 
 ## Compass Headings
 | Heading            | Abbreviation | Degrees | Order |
